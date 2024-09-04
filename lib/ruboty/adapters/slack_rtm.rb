@@ -1,4 +1,5 @@
 require 'cgi'
+require 'etc'
 require 'time'
 require 'json'
 require 'slack'
@@ -119,7 +120,21 @@ module Ruboty
       end
 
       def client
-        @client ||= ::Slack::Client.new(token: ENV['SLACK_TOKEN'])
+        @client ||= if Etc.uname[:sysname] == 'Linux'
+                      ::Slack::Client.new(
+                        token: ENV['SLACK_TOKEN'],
+                        ca_path: '/etc/ssl/certs',
+                        ca_file: '/etc/ssl/certs/ca-certificates.crt'
+                      )
+                    elsif Etc.uname[:sysname] == 'Darwin'
+                      ::Slack::Client.new(
+                        token: ENV['SLACK_TOKEN'],
+                        ca_path: '/private/etc/ssl',
+                        ca_file: '/private/etc/ssl/cert.pem'
+                      )
+                    else
+                      ::Slack::Client.new(token: ENV['SLACK_TOKEN'])
+                    end
       end
 
       def realtime
